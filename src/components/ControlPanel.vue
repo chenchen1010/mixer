@@ -26,11 +26,10 @@
             <el-input-number 
               v-model="outputCount" 
               :min="1" 
-              :max="maxOutputCount"
               size="default"
             />
             <el-tooltip 
-              content="最大输出数量取决于文件夹中的视频数量" 
+              content="可以设置任意数量，视频可能会重复使用" 
               placement="top"
             >
               <el-icon class="info-icon"><InfoFilled /></el-icon>
