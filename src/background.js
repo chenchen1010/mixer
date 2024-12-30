@@ -7,6 +7,30 @@ import path from 'path'
 import fs from 'fs'
 import ffmpeg from 'fluent-ffmpeg'
 
+// 设置 ffmpeg 路径
+const ffmpegPath = app.isPackaged
+  ? path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe')
+  : 'ffmpeg'
+const ffprobePath = app.isPackaged
+  ? path.join(process.resourcesPath, 'ffmpeg', 'ffprobe.exe')
+  : 'ffprobe'
+
+// 添加调试日志
+console.log('FFmpeg Path:', ffmpegPath)
+console.log('FFprobe Path:', ffprobePath)
+console.log('Is Packaged:', app.isPackaged)
+console.log('Resource Path:', process.resourcesPath)
+
+// 检查文件是否存在
+if (app.isPackaged) {
+  console.log('FFmpeg exists:', fs.existsSync(ffmpegPath))
+  console.log('FFprobe exists:', fs.existsSync(ffprobePath))
+}
+
+// 配置 ffmpeg 路径
+ffmpeg.setFfmpegPath(ffmpegPath)
+ffmpeg.setFfprobePath(ffprobePath)
+
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 // 保持window对象的全局引用，避免JavaScript对象被垃圾回收时，窗口被自动关闭。
@@ -136,6 +160,8 @@ ipcMain.handle('select-output-folder', async () => {
 
 ipcMain.handle('start-mixing', async (event, folders, outputDir, count = 1) => {
   try {
+    console.log('Starting mixing with ffmpeg path:', ffmpegPath)
+    console.log('Output directory:', outputDir)
     const results = []
     
     for (let i = 0; i < count; i++) {
