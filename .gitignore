@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
 /dist
-
+/dist_electron
 
 # local env files
 .env.local
@@ -22,5 +22,5 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-#Electron-builder output
-/dist_electron
+# FFmpeg binaries
+resources/ffmpeg/*.exe
