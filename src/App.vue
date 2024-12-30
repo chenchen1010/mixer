@@ -8,8 +8,8 @@
     
     <el-main class="app-main">
       <FolderSelector @folder-selected="handleFolderSelected" />
-      <VideoPreview :selected-path="selectedFolder" />
-      <ControlPanel />
+      <VideoPreview :selected-path="selectedFolder" @folders-loaded="handleFoldersLoaded" />
+      <ControlPanel :folders="folders" />
     </el-main>
   </el-container>
 </template>
@@ -21,9 +21,14 @@ import VideoPreview from './components/VideoPreview.vue'
 import ControlPanel from './components/ControlPanel.vue'
 
 const selectedFolder = ref('')
+const folders = ref([])
 
 const handleFolderSelected = (path) => {
   selectedFolder.value = path
+}
+
+const handleFoldersLoaded = (loadedFolders) => {
+  folders.value = loadedFolders
 }
 </script>
 

@@ -7,8 +7,13 @@
         </div>
       </template>
       <div class="control-content">
-        <el-button type="primary" :disabled="!hasSelectedFolder" @click="startMixing">
-          开始混剪
+        <el-button 
+          type="primary" 
+          :loading="mixing" 
+          :disabled="!folders.length"
+          @click="startMixing"
+        >
+          {{ mixing ? `混剪中 ${progress}%` : '开始混剪' }}
         </el-button>
       </div>
     </el-card>
@@ -16,12 +21,55 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
 
-const hasSelectedFolder = ref(false)
+const props = defineProps({
+  folders: {
+    type: Array,
+    required: true
+  }
+})
 
-const startMixing = () => {
-  // TODO: 实现混剪功能
+const mixing = ref(false)
+const progress = ref(0)
+
+// 创建进度监听器
+let progressHandler = null
+
+onMounted(() => {
+  progressHandler = (data) => {
+    progress.value = data.percent
+  }
+  window.electronAPI.onMixingProgress(progressHandler)
+})
+
+onUnmounted(() => {
+  // 清理监听器
+  if (progressHandler) {
+    window.electronAPI.onMixingProgress(progressHandler)
+  }
+})
+
+const startMixing = async () => {
+  if (!props.folders.length) return
+  
+  mixing.value = true
+  progress.value = 0
+  
+  try {
+    // 只传递必要的路径信息
+    const folderPaths = props.folders.map(folder => ({
+      path: folder.path
+    }))
+    const outputPath = await window.electronAPI.startMixing(folderPaths)
+    ElMessage.success(`混剪完成！输出文件：${outputPath}`)
+  } catch (error) {
+    console.error('混剪失败:', error)
+    ElMessage.error('混剪失败')
+  } finally {
+    mixing.value = false
+  }
 }
 </script>
 

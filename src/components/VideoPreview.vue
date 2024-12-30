@@ -44,11 +44,13 @@ const props = defineProps({
 })
 
 const folders = ref([])
+const emit = defineEmits(['folders-loaded'])
 
 watch(() => props.selectedPath, async (newPath) => {
   console.log('Selected path changed:', newPath)
   if (!newPath) {
     folders.value = []
+    emit('folders-loaded', [])
     return
   }
 
@@ -56,9 +58,11 @@ watch(() => props.selectedPath, async (newPath) => {
     const result = await window.electronAPI.getFolderInfo(newPath)
     console.log('Folder info result:', result)
     folders.value = result
+    emit('folders-loaded', result)
   } catch (error) {
     console.error('获取文件夹信息失败:', error)
     ElMessage.error('获取文件夹信息失败')
+    emit('folders-loaded', [])
   }
 }, { immediate: true })
 </script>

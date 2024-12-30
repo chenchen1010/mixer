@@ -5,6 +5,7 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
 import path from 'path'
 import fs from 'fs'
+import ffmpeg from 'fluent-ffmpeg'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
@@ -114,6 +115,79 @@ ipcMain.handle('get-folder-info', async (event, folderPath) => {
     return subfolders
   } catch (error) {
     console.error('Error reading directory:', error)
+    throw error
+  }
+})
+
+ipcMain.handle('start-mixing', async (event, folders) => {
+  try {
+    // 从每个文件夹中随机选择一个视频
+    const selectedVideos = []
+    for (const folder of folders) {
+      const files = await fs.promises.readdir(folder.path)
+      const videoFiles = files.filter(file => {
+        const ext = path.extname(file).toLowerCase()
+        return ['.mp4', '.mov', '.avi', '.mkv'].includes(ext)
+      })
+      
+      if (videoFiles.length > 0) {
+        const randomVideo = videoFiles[Math.floor(Math.random() * videoFiles.length)]
+        selectedVideos.push(path.join(folder.path, randomVideo))
+      }
+    }
+
+    // 随机打乱视频顺序
+    for (let i = selectedVideos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [selectedVideos[i], selectedVideos[j]] = [selectedVideos[j], selectedVideos[i]]
+    }
+
+    if (selectedVideos.length === 0) {
+      throw new Error('没有找到可用的视频文件')
+    }
+
+    // 创建输出目录
+    const outputDir = path.join(app.getPath('desktop'), 'VideoMixer_Output')
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir)
+    }
+
+    const outputPath = path.join(outputDir, `mixed_${Date.now()}.mp4`)
+
+    // 修改 ffmpeg 命令
+    return new Promise((resolve, reject) => {
+      // 创建一个临时文件列表
+      const listPath = path.join(app.getPath('temp'), 'video_list.txt')
+      const fileContent = selectedVideos.map(file => `file '${file}'`).join('\n')
+      fs.writeFileSync(listPath, fileContent)
+
+      ffmpeg()
+        .input(listPath)
+        .inputOptions(['-f', 'concat', '-safe', '0'])
+        .outputOptions('-c copy')  // 使用复制模式，不重新编码
+        .output(outputPath)
+        .on('progress', progress => {
+          win.webContents.send('mixing-progress', {
+            percent: Math.round(progress.percent),
+            timemark: progress.timemark
+          })
+        })
+        .on('end', () => {
+          // 删除临时文件
+          fs.unlinkSync(listPath)
+          resolve(outputPath)
+        })
+        .on('error', (err) => {
+          // 删除临时文件
+          if (fs.existsSync(listPath)) {
+            fs.unlinkSync(listPath)
+          }
+          reject(err)
+        })
+        .run()
+    })
+  } catch (error) {
+    console.error('混剪失败:', error)
     throw error
   }
 }) 
