@@ -21,7 +21,10 @@ async function createWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 800,
-    titleBarStyle: 'hiddenInset', // macOS 风格的标题栏
+    minWidth: 800,
+    minHeight: 600,
+    frame: true,
+    backgroundColor: '#f5f5f7',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -30,14 +33,17 @@ async function createWindow() {
     }
   })
 
+  // 设置窗口标题
+  win.setTitle('Video Mixer')
+
+  // 打开开发者工具
+  win.webContents.openDevTools()
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
-    // 如果在开发环境，加载开发服务器URL
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-    if (!process.env.IS_TEST) win.webContents.openDevTools()
   } else {
     createProtocol('app')
-    // 生产环境下加载 index.html
-    win.loadURL('app://./index.html')
+    await win.loadURL('app://./index.html')
   }
 }
 
