@@ -4,6 +4,7 @@ import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
 import path from 'path'
+import fs from 'fs'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
@@ -81,4 +82,38 @@ ipcMain.handle('select-folder', async () => {
     properties: ['openDirectory']
   })
   return result
+})
+
+ipcMain.handle('get-folder-info', async (event, folderPath) => {
+  console.log('Reading folder:', folderPath)
+  try {
+    const items = await fs.promises.readdir(folderPath, { withFileTypes: true })
+    console.log('Found items:', items)
+    const subfolders = []
+
+    for (const item of items) {
+      if (item.isDirectory()) {
+        const subfolder = {
+          name: item.name,
+          path: path.join(folderPath, item.name),
+          videoCount: 0
+        }
+        
+        // 获取子文件夹中的视频文件数量
+        const files = await fs.promises.readdir(subfolder.path)
+        subfolder.videoCount = files.filter(file => {
+          const ext = path.extname(file).toLowerCase()
+          return ['.mp4', '.mov', '.avi', '.mkv'].includes(ext)
+        }).length
+
+        subfolders.push(subfolder)
+      }
+    }
+
+    console.log('Returning subfolders:', subfolders)
+    return subfolders
+  } catch (error) {
+    console.error('Error reading directory:', error)
+    throw error
+  }
 }) 

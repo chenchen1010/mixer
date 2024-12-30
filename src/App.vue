@@ -7,17 +7,24 @@
     </el-header>
     
     <el-main class="app-main">
-      <FolderSelector />
-      <VideoPreview />
+      <FolderSelector @folder-selected="handleFolderSelected" />
+      <VideoPreview :selected-path="selectedFolder" />
       <ControlPanel />
     </el-main>
   </el-container>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import FolderSelector from './components/FolderSelector.vue'
 import VideoPreview from './components/VideoPreview.vue'
 import ControlPanel from './components/ControlPanel.vue'
+
+const selectedFolder = ref('')
+
+const handleFolderSelected = (path) => {
+  selectedFolder.value = path
+}
 </script>
 
 <style>

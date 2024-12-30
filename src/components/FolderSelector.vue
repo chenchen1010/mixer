@@ -21,12 +21,14 @@ import { Folder } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const selectedPath = ref('')
+const emit = defineEmits(['folder-selected'])
 
 const selectFolder = async () => {
   try {
     const result = await window.electronAPI.selectFolder()
     if (result.canceled) return
     selectedPath.value = result.filePaths[0]
+    emit('folder-selected', selectedPath.value)
     ElMessage.success('文件夹选择成功')
   } catch (error) {
     console.error('选择文件夹失败:', error)
